@@ -463,17 +463,40 @@ body{
 </style>
 <script>
 (function(){
-  var PAGE_W = 210 * 96 / 25.4; /* A4 width 210mm expressed in CSS pixels */
+  var PAGE_W = 210 * 96 / 25.4; /* A4 width 210mm expressed in CSS pixels (~793.7) */
+  /* Scale the fixed A4 pages down to fit narrow screens using transform:scale.
+     Unlike CSS `zoom`, transform is a purely visual scale that never reflows
+     text, so mobile renders as an exact miniature of the desktop layout.
+     A negative margin removes the leftover layout space each scaled page would
+     otherwise reserve, and overflow-x:hidden (in the stylesheet) clips the
+     untransformed layout width. Desktop (>= one page wide) is left untouched. */
   function fit(){
     var vw = document.documentElement.clientWidth || window.innerWidth;
-    var ratio = vw < PAGE_W ? vw / PAGE_W : 1;
+    var scale = vw < PAGE_W ? vw / PAGE_W : 1;
     var pages = document.getElementsByClassName('page');
     for (var i = 0; i < pages.length; i++){
-      pages[i].style.zoom = (ratio === 1) ? '' : ratio;
+      var p = pages[i];
+      if (scale === 1){
+        p.style.transform = '';
+        p.style.transformOrigin = '';
+        p.style.margin = '';
+      } else {
+        p.style.transform = 'none';   /* reset so offsetHeight is the true height */
+        p.style.margin = '0';
+        var h = p.offsetHeight;        /* unscaled layout height */
+        p.style.transformOrigin = 'top left';
+        p.style.transform = 'scale(' + scale + ')';
+        p.style.marginTop = (i === 0 ? 12 : 0) + 'px';
+        p.style.marginBottom = (12 - h * (1 - scale)) + 'px';
+      }
     }
   }
-  window.addEventListener('resize', fit);
-  window.addEventListener('orientationchange', fit);
+  var raf;
+  function onResize(){ if (raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(fit); }
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', onResize);
+  window.addEventListener('load', fit);
+  if (document.fonts && document.fonts.ready){ document.fonts.ready.then(fit); }
   if (document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', fit);
   } else {
