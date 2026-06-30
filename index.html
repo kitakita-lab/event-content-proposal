@@ -242,6 +242,12 @@ body{
   }
   .page::after{display:none !important;}
 
+  /* The cover is a flex column whose centering depends on display:flex; the
+     `.page{display:block}` override above breaks it (cover-center rides up into
+     the header). Re-assert flex for the cover only, so it lays out as on screen. */
+  .page.cover{display:flex !important; flex-direction:column !important;}
+  .cover-inner{flex:1 1 auto !important;}
+
   /* Color / background preservation (unchanged values) */
   .brandmark{opacity:.55 !important;}
   .brandmark img,.contact-hero-logo{opacity:1 !important;}
